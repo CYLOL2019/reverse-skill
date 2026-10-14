@@ -1,0 +1,18 @@
+{
+  "$schema": "https://code.claude.com/schema/marketplace.json",
+  "name": "reverse-skill",
+  "description": "Reverse-skill security router + REA execution backend, as a Claude Code plugin.",
+  "owner": {
+    "name": "ZhaoXu",
+    "url": "https://github.com/zhaoxuya520"
+  },
+  "plugins": [
+    {
+      "name": "reverse-skill",
+      "displayName": "Reverse Skill",
+      "description": "Authorized reverse-engineering / security task router; routes to the right methodology and prefers the REA MCP backend when available, else local CLI tools.",
+      "source": "./plugins/reverse-skill",
+      "version": "1.0.1"
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "$schema": "https://code.claude.com/schema/plugin.json",
+  "name": "reverse-skill",
+  "displayName": "Reverse Skill",
+  "version": "1.0.1",
+  "description": "Client-neutral reverse-engineering / security task router for Claude Code, with the REA (rea-agents) MCP server registered as an optional execution backend.",
+  "author": {
+    "name": "ZhaoXu",
+    "url": "https://github.com/zhaoxuya520"
+  },
+  "homepage": "https://reverse.apivix.com/",
+  "repository": "https://github.com/zhaoxuya520/reverse-skill",
+  "license": "MIT",
+  "keywords": [
+    "cybersecurity",
+    "reverse-engineering",
+    "security-analysis",
+    "skill-router",
+    "mcp",
+    "rea"
+  ],
+  "skills": [
+    "./skills/"
+  ],
+  "mcpServers": {
+    "rea": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "rea-agents@6.4.0",
+        "mcp"
+      ]
+    }
+  }
+}

@@ -354,6 +354,26 @@
       "verifyCommand": "bkcrack",
       "releaseTag": "v1.8.1",
       "preferApiDigest": true
+    },
+    {
+      "name": "rea",
+      "bootstrapKind": "npm-mcp",
+      "npmPackage": "rea-agents@6.4.0",
+      "mcpNames": [
+        "rea"
+      ],
+      "mcpCommand": "npx",
+      "mcpArgs": [
+        "-y",
+        "rea-agents@6.4.0",
+        "mcp"
+      ],
+      "mcpEnv": {},
+      "docsUrl": "https://github.com/morluto/rea",
+      "canAutoInstall": true,
+      "verifyCommand": "npx",
+      "pinnedVersion": "6.4.0",
+      "note": "REA (Reverse Engineer Anything) 执行后端：一个 MCP server，驱动 Ghidra/IDA/Hopper/apktool/pcap/.NET/JS 等对 shipped 制品做反编译/结构分析/跨版本比对/被动运行时取证，返回带 provenance 的 Evidence。作为可选执行后端接入——路由与授权门禁不变，映射见 integrations/rea/rea-tool-map.json，升级流程见 integrations/rea/REA-INTEGRATION.md。版本单一事实源: integrations/rea/rea.version（改后跑 sync-rea-version.sh）。Native/Hopper/IDA 等深度引擎为 bring-your-own，REA setup 另行处理。"
     }
   ]
 }

@@ -11,6 +11,7 @@
 4. 指定 lead + specialist 角色（ops/role-map）
 5. 立即打开 PRIMARY 的 SKILL.md → ACTION REQUIRED
 6. 工具路径只认 tool-index；缺则 bootstrap（仅 manifest 能力）
+6b. 执行 shipped 制品分析前先过 REA 后端规则（rea-backend/SKILL.md）：查 integrations/rea/rea-tool-map.json，会话中 REA MCP(server=rea) 有对应工具就优先调用（真执行+Evidence），否则退回本地工具。REA 不改变授权门禁。
 7. 过程追加 timeline / workitems；结论走 Evidence→Finding→Path
 8. 未命中 → 读 routing.md 全表或提议新 skill
 ```

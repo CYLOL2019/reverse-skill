@@ -1,0 +1,632 @@
+{
+  "schemaVersion": "1.0",
+  "meta": {
+    "description": "reverse-skill 技能/能力 → REA (rea-agents) MCP 工具 的优先映射表。REA 作为『可选执行后端』接入：路由与授权门禁不变，只在工具解析层提供『有 REA MCP 工具就优先、没有就退回本地 CLU/脚本』的偏好。这是把 REA 更新折入 reverse-skill 的两处之一（另一处是 skills/scripts/bootstrap-manifest.json 的 rea 能力条目）。",
+    "reaPackage": "rea-agents",
+    "reaPinnedVersion": "6.4.0",
+    "reaPinnedVersionSource": "integrations/rea/rea.version (canonical)",
+    "reaMcpServerName": "rea",
+    "reaMcpLaunch": "npx -y rea-agents@<version> mcp",
+    "preferenceRule": "当某技能要执行『被 reaTools 覆盖』的分析动作时：若会话中 REA MCP server(name=rea) 已注册且 tools/list 里存在对应工具，则优先调用该 REA 工具（真执行 + Evidence）；否则按该技能原有方式用 tool-index.md 里的本地工具/脚本。两条路径都仍在技能内部，授权未 granted 一律不得对目标 ACT。",
+    "updateInstructions": "REA 升级 / 工具名变动时：① 改 integrations/rea/rea.version；② 运行 integrations/rea/sync-rea-version.sh 同步进 bootstrap-manifest.json 与 .claude-plugin/plugin.json；③ 运行 integrations/rea/probe-rea.sh 拉取当前 tools/list 并与本表 diff，补齐/修正 reaTools。详见 integrations/rea/REA-INTEGRATION.md。",
+    "coverageNote": "reaTools 为撰写时（REA 6.4.0）从 docs/mcp-contracts.md 与 src 推导的工具名，共约 103 个。会话里以 REA server 实际 tools/list 为准——缺失的工具按 preferenceRule 自动退回本地路径。"
+  },
+  "fallbackPolicy": {
+    "whenReaAbsent": "使用该技能 SKILL.md 既有工具链（tool-index.md 解析，缺则 bootstrap-manifest 能力）。",
+    "whenReaToolMissing": "单个工具缺失不影响其余 REA 工具；该动作单独退回本地路径。",
+    "authorizationUnchanged": "REA 的存在不构成授权；scope-contract/case-guard 门禁对 REA 调用同样生效（REA 自身为本地只读分析，但重放/注入/动态 hook 仍需授权）。"
+  },
+  "map": {
+    "apk-reverse": {
+      "reaTools": [
+        "inspect_apktool_client",
+        "decode_android_resources",
+        "inspect_android_package",
+        "inspect_android_class",
+        "inspect_android_method",
+        "inspect_adb_client",
+        "inspect_adb_device",
+        "inspect_adb_package",
+        "list_adb_packages",
+        "list_adb_processes",
+        "read_adb_logcat",
+        "read_adb_setting",
+        "capture_adb_screen",
+        "inspect_signature",
+        "inspect_dart_aot"
+      ],
+      "localFallback": [
+        "jadx",
+        "apktool",
+        "adb",
+        "frida"
+      ],
+      "note": "APK 静态结构/资源/类方法用 REA inspect_android_* 与 apktool client；设备侧用 adb 工具组；Flutter(Dart AOT) 用 inspect_dart_aot。动态 hook 仍走 frida（见 frida 行）。"
+    },
+    "mobile-reverse": {
+      "reaTools": [
+        "inspect_android_package",
+        "inspect_android_class",
+        "inspect_android_method",
+        "decode_android_resources",
+        "inspect_apktool_client",
+        "inspect_adb_device",
+        "inspect_adb_package",
+        "inspect_adb_display",
+        "inspect_adb_window",
+        "list_adb_devices",
+        "list_adb_packages",
+        "list_adb_processes",
+        "list_adb_services",
+        "list_adb_features",
+        "list_adb_directory",
+        "read_adb_logcat",
+        "read_adb_setting",
+        "capture_adb_screen",
+        "inspect_macho",
+        "inspect_plist",
+        "get_objc_classes",
+        "get_objc_protocols",
+        "analyze_swift_types",
+        "decode_interface_builder",
+        "inspect_dart_aot"
+      ],
+      "localFallback": [
+        "jadx",
+        "apktool",
+        "frida",
+        "objection",
+        "mobsf",
+        "adb"
+      ],
+      "note": "Android 侧同 apk-reverse；iOS 侧 Mach-O/Objective-C/Swift/IB 用 inspect_macho + get_objc_* + analyze_swift_types + decode_interface_builder + inspect_plist。"
+    },
+    "js-reverse": {
+      "reaTools": [
+        "analyze_javascript_application",
+        "analyze_javascript_module",
+        "analyze_web_bundle",
+        "compare_javascript_export_shapes",
+        "compare_source_to_bundle",
+        "compare_bundles",
+        "list_javascript_runtime_targets",
+        "inspect_web_network_capture"
+      ],
+      "localFallback": [
+        "jshookmcp",
+        "anything-analyzer",
+        "xquik-mcp",
+        "agent-browser"
+      ],
+      "note": "前端 JS/webpack bundle 静态结构、导出形状、源↔bundle 比对用 REA analyze_javascript_*；运行时目标列举用 list_javascript_runtime_targets。动态 hook/CDP 抓包仍可用 jshookmcp/agent-browser。"
+    },
+    "browser-extension-reverse": {
+      "reaTools": [
+        "analyze_javascript_application",
+        "analyze_web_bundle",
+        "analyze_javascript_module",
+        "compare_bundles",
+        "inspect_web_event_listeners"
+      ],
+      "localFallback": [
+        "jadx",
+        "anything-analyzer",
+        "agent-browser"
+      ],
+      "note": "浏览器扩展本质是打包 JS，用 analyze_javascript_application / analyze_web_bundle 拆解 manifest+后台脚本。"
+    },
+    "browser-automation": {
+      "reaTools": [
+        "inspect_web_page",
+        "inspect_web_event_listeners",
+        "inspect_web_network_capture",
+        "capture_browser_scenario",
+        "capture_web_screenshot",
+        "compare_web_captures",
+        "compare_web_screenshots",
+        "list_browser_targets",
+        "get_navigation_context",
+        "inspect_electron_page",
+        "inspect_electron_fuses",
+        "capture_electron_scenario",
+        "list_electron_targets"
+      ],
+      "localFallback": [
+        "agent-browser",
+        "anything-analyzer"
+      ],
+      "note": "页面/事件监听/网络捕获/场景录制/截图比对用 REA 浏览器组；Electron 应用用 inspect_electron_* + capture_electron_scenario（含 fuses 安全位）。"
+    },
+    "ghidra-reverse": {
+      "reaTools": [
+        "analyze_function",
+        "get_call_graph",
+        "get_callers",
+        "inspect_binary_layout",
+        "inspect_native_api",
+        "inspect_native_dispatch_metadata",
+        "inspect_signature",
+        "list_funcs",
+        "list_names",
+        "list_procedures",
+        "list_segments",
+        "list_strings",
+        "inspect_address_context",
+        "read_bytes",
+        "inspect_analysis_view"
+      ],
+      "localFallback": [
+        "ghidra-mcp",
+        "idapro",
+        "r2",
+        "rabin2"
+      ],
+      "note": "原生二进制反编译/函数/调用图/地址上下文优先走 REA native 组（REA 会驱动已装的 Ghidra/IDA/Hopper）；缺 REA 时用 ghidra-mcp。"
+    },
+    "ida-reverse": {
+      "reaTools": [
+        "analyze_function",
+        "get_call_graph",
+        "get_callers",
+        "inspect_binary_layout",
+        "inspect_native_api",
+        "inspect_native_dispatch_metadata",
+        "list_funcs",
+        "list_names",
+        "list_procedures",
+        "list_segments",
+        "list_strings",
+        "inspect_address_context",
+        "read_bytes"
+      ],
+      "localFallback": [
+        "idapro",
+        "idalib-mcp"
+      ],
+      "note": "REA native 分析可挂到既有 IDA（只读，不保存/关闭 GUI 库）；缺 REA 时用 idapro/idalib-mcp。"
+    },
+    "binary-ninja-reverse": {
+      "reaTools": [
+        "analyze_function",
+        "get_call_graph",
+        "get_callers",
+        "inspect_binary_layout",
+        "inspect_native_api",
+        "list_funcs",
+        "list_strings",
+        "inspect_address_context"
+      ],
+      "localFallback": [
+        "binaryninja"
+      ],
+      "note": "Binary Ninja 本身非 REA provider；可用 REA native 组做交叉验证/函数级比对，主力仍是 BN。"
+    },
+    "radare2": {
+      "reaTools": [
+        "inspect_binary_layout",
+        "list_funcs",
+        "list_names",
+        "list_segments",
+        "list_strings",
+        "read_bytes",
+        "inspect_with_objdump",
+        "analyze_function",
+        "list_cutter_sessions"
+      ],
+      "localFallback": [
+        "r2",
+        "rabin2"
+      ],
+      "note": "布局/符号/字符串/反汇编 REA 可覆盖；r2/rabin2 做脚本化批处理与交互。"
+    },
+    "reverse-engineering": {
+      "reaTools": [
+        "inspect_artifact",
+        "inspect_binary_layout",
+        "analyze_function",
+        "get_call_graph",
+        "inspect_signature",
+        "inspect_native_api",
+        "list_strings",
+        "list_funcs",
+        "inspect_analysis_view",
+        "list_unknowns",
+        "get_evidence_bundle"
+      ],
+      "localFallback": [
+        "ghidra-mcp",
+        "r2",
+        "idapro"
+      ],
+      "note": "通用逆向入口：inspect_artifact 先定类型/布局，再按子类走对应组；list_unknowns/get_evidence_bundle 维护证据与未知项。"
+    },
+    "macos-reverse": {
+      "reaTools": [
+        "inspect_macho",
+        "get_objc_classes",
+        "get_objc_protocols",
+        "analyze_swift_types",
+        "decode_interface_builder",
+        "inspect_plist",
+        "inspect_signature",
+        "inspect_native_api",
+        "analyze_function"
+      ],
+      "localFallback": [
+        "hopper",
+        "idapro",
+        "r2"
+      ],
+      "note": "Mach-O/ObjC/Swift/IB/plist/代码签名用 REA macOS 组（REA 可驱动已装 Hopper）。"
+    },
+    "dotnet-reverse": {
+      "reaTools": [
+        "inspect_managed_artifact",
+        "inspect_managed_members",
+        "inspect_managed_native_boundaries",
+        "compare_managed_members",
+        "inspect_pe_resources",
+        "inspect_signature"
+      ],
+      "localFallback": [
+        "dnspy",
+        "ilspy"
+      ],
+      "note": ".NET 托管程序集成员/边界/PE 资源用 REA managed 组；版本间成员 diff 用 compare_managed_members。"
+    },
+    "thick-client": {
+      "reaTools": [
+        "inspect_managed_artifact",
+        "inspect_managed_members",
+        "inspect_pe_resources",
+        "inspect_binary_layout",
+        "inspect_native_api",
+        "inspect_sqlite_database",
+        "inspect_packet_capture"
+      ],
+      "localFallback": [
+        "idapro",
+        "dnspy",
+        "burpsuite-mcp"
+      ],
+      "note": "C/S 胖客户端：托管层用 managed 组，原生层用 native 组，本地库用 inspect_sqlite_database，网络用 pcap 组/Burp。"
+    },
+    "go-rust-reverse": {
+      "reaTools": [
+        "inspect_go_binary",
+        "inspect_rust_binary",
+        "inspect_binary_layout",
+        "analyze_function",
+        "get_call_graph",
+        "list_funcs",
+        "list_strings",
+        "inspect_native_api"
+      ],
+      "localFallback": [
+        "ghidra-mcp",
+        "idapro",
+        "r2"
+      ],
+      "note": "Go/Rust 有专用 inspect_go_binary / inspect_rust_binary 恢复符号与类型信息，再接 native 组做函数级分析。"
+    },
+    "firmware-pentest": {
+      "reaTools": [
+        "inspect_firmware_regions",
+        "inspect_artifact",
+        "inspect_binary_layout",
+        "list_strings",
+        "read_bytes",
+        "inspect_native_api"
+      ],
+      "localFallback": [
+        "binwalk",
+        "ghidra-mcp"
+      ],
+      "note": "固件分区/区域用 inspect_firmware_regions；提取后的组件按二进制类型下分。binwalk 仍用于载荷雕刻。"
+    },
+    "hardware-security": {
+      "reaTools": [
+        "inspect_firmware_regions",
+        "inspect_signal_decoders",
+        "decode_signal_recording",
+        "inspect_binary_layout",
+        "read_bytes"
+      ],
+      "localFallback": [
+        "binwalk",
+        "yara"
+      ],
+      "note": "固件/信号层分析用 REA；物理侧（JTAG/逻辑分析仪）无 REA 覆盖，走本地工具。"
+    },
+    "protocol-reverse": {
+      "reaTools": [
+        "inspect_pcap_capture",
+        "inspect_pcap_client",
+        "inspect_packet_capture",
+        "inspect_packet_fields"
+      ],
+      "localFallback": [
+        "wireshark",
+        "proxycat"
+      ],
+      "note": "抓包解析/字段级分析用 REA pcap 组；深度 DPI/自定义协议解析仍可用 Wireshark 插件。"
+    },
+    "radio-sdr": {
+      "reaTools": [
+        "decode_signal_recording",
+        "inspect_signal_decoders"
+      ],
+      "localFallback": [
+        "gnuradio",
+        "inspectrum"
+      ],
+      "note": "录制信号解调/解码器探测用 REA signal 组；采集与可视化仍用 SDR 工具链。"
+    },
+    "binary-diff": {
+      "reaTools": [
+        "compare_functions",
+        "compare_artifacts",
+        "compare_application_versions",
+        "compare_bundles",
+        "compare_managed_members",
+        "compare_wasm_interfaces",
+        "compare_javascript_export_shapes",
+        "compare_source_to_bundle",
+        "compare_process_captures",
+        "compare_web_captures",
+        "compare_web_screenshots"
+      ],
+      "localFallback": [
+        "bindiff",
+        "diaphora"
+      ],
+      "note": "跨版本/跨制品比对是 REA 的强项：按制品类型选 compare_* 工具。函数级深度匹配可再用 BinDiff/Diaphora。"
+    },
+    "patch-diff-exploit": {
+      "reaTools": [
+        "compare_functions",
+        "compare_application_versions",
+        "compare_artifacts",
+        "analyze_function",
+        "get_call_graph",
+        "inspect_address_context",
+        "read_bytes"
+      ],
+      "localFallback": [
+        "bindiff",
+        "ghidra-mcp"
+      ],
+      "note": "补丁 diff 定位改动函数用 compare_functions/compare_application_versions，再对改动点做 analyze_function + 地址上下文。"
+    },
+    "digital-forensics": {
+      "reaTools": [
+        "inspect_sqlite_database",
+        "inspect_recorded_crash",
+        "inspect_plist",
+        "read_adb_logcat",
+        "inspect_artifact",
+        "inspect_pe_resources",
+        "list_strings"
+      ],
+      "localFallback": [
+        "yara",
+        "binwalk"
+      ],
+      "note": "取证：SQLite 库/崩溃转储/plist/日志用 REA 对应工具提取结构化证据。"
+    },
+    "malware-analysis": {
+      "reaTools": [
+        "inspect_artifact",
+        "inspect_binary_layout",
+        "inspect_signature",
+        "inspect_pe_resources",
+        "list_strings",
+        "inspect_native_api",
+        "inspect_recorded_crash",
+        "analyze_function",
+        "get_call_graph",
+        "inspect_packet_capture"
+      ],
+      "localFallback": [
+        "yara",
+        "ghidra-mcp",
+        "r2"
+      ],
+      "note": "静态三连（布局/签名/字符串/PE 资源/导入）用 REA；行为与规则匹配用 YARA + 沙箱（见 ctf-sandbox/sandbox-profile）。注意：仅在授权隔离环境分析。"
+    },
+    "pwn-chain": {
+      "reaTools": [
+        "analyze_function",
+        "get_call_graph",
+        "get_callers",
+        "inspect_binary_layout",
+        "inspect_native_api",
+        "inspect_native_dispatch_metadata",
+        "list_funcs",
+        "list_strings",
+        "inspect_address_context",
+        "read_bytes",
+        "inspect_recorded_crash"
+      ],
+      "localFallback": [
+        "pwntools",
+        "ghidra-mcp",
+        "r2"
+      ],
+      "note": "利用链：用 REA native 组做静态面（gadget 前置分析、保护、调用图），崩溃复现用 inspect_recorded_crash；利用脚本仍用 pwntools。"
+    },
+    "ctf-sandbox": {
+      "reaTools": [
+        "inspect_artifact",
+        "inspect_binary_layout",
+        "analyze_function",
+        "get_call_graph",
+        "list_strings",
+        "read_bytes",
+        "inspect_macho",
+        "inspect_managed_artifact",
+        "analyze_javascript_application",
+        "inspect_firmware_regions"
+      ],
+      "localFallback": [
+        "pwntools",
+        "ghidra-mcp",
+        "r2",
+        "yara"
+      ],
+      "note": "CTF 题型多样：先 inspect_artifact 定类型再下分到对应 REA 组。沙箱编排见 CTF-Sandbox-Orchestrator。"
+    },
+    "supply-chain-security": {
+      "reaTools": [
+        "compare_source_to_bundle",
+        "compare_bundles",
+        "analyze_web_bundle",
+        "analyze_javascript_application",
+        "inspect_artifact",
+        "inspect_signature"
+      ],
+      "localFallback": [
+        "seclists",
+        "yara"
+      ],
+      "note": "供应链：源↔发布制品比对（compare_source_to_bundle）发现植入；bundle 成分分析用 analyze_web_bundle。"
+    },
+    "code-audit": {
+      "reaTools": [
+        "inspect_fixture_source",
+        "compare_source_to_bundle",
+        "inspect_artifact"
+      ],
+      "localFallback": [],
+      "note": "注意：纯源码仓库审计按 REA 官方指引『不应启动 REA』——用常规仓库工具。仅当需要把源码与已发布制品对照时才用 compare_source_to_bundle。"
+    }
+  },
+  "capabilityGroups": {
+    "comment": "按 REA 工具前缀/领域分组，供 probe-rea.sh diff 与文档引用；不改变上面的 map 语义。",
+    "native": [
+      "analyze_function",
+      "get_call_graph",
+      "get_callers",
+      "inspect_binary_layout",
+      "inspect_native_api",
+      "inspect_native_dispatch_metadata",
+      "inspect_signature",
+      "inspect_address_context",
+      "inspect_with_objdump",
+      "read_bytes",
+      "list_funcs",
+      "list_names",
+      "list_procedures",
+      "list_segments",
+      "list_strings",
+      "list_cutter_sessions"
+    ],
+    "macho_apple": [
+      "inspect_macho",
+      "get_objc_classes",
+      "get_objc_protocols",
+      "analyze_swift_types",
+      "decode_interface_builder",
+      "inspect_plist"
+    ],
+    "android": [
+      "inspect_apktool_client",
+      "decode_android_resources",
+      "inspect_android_package",
+      "inspect_android_class",
+      "inspect_android_method",
+      "inspect_adb_client",
+      "inspect_adb_device",
+      "inspect_adb_display",
+      "inspect_adb_package",
+      "inspect_adb_window",
+      "list_adb_devices",
+      "list_adb_packages",
+      "list_adb_processes",
+      "list_adb_services",
+      "list_adb_features",
+      "list_adb_directory",
+      "read_adb_logcat",
+      "read_adb_setting",
+      "capture_adb_screen",
+      "inspect_dart_aot"
+    ],
+    "managed_dotnet": [
+      "inspect_managed_artifact",
+      "inspect_managed_members",
+      "inspect_managed_native_boundaries",
+      "compare_managed_members",
+      "inspect_pe_resources"
+    ],
+    "javascript_web": [
+      "analyze_javascript_application",
+      "analyze_javascript_module",
+      "analyze_web_bundle",
+      "compare_javascript_export_shapes",
+      "compare_source_to_bundle",
+      "compare_bundles",
+      "list_javascript_runtime_targets",
+      "inspect_fixture_source"
+    ],
+    "browser_electron": [
+      "inspect_web_page",
+      "inspect_web_event_listeners",
+      "inspect_web_network_capture",
+      "capture_browser_scenario",
+      "capture_web_screenshot",
+      "compare_web_captures",
+      "compare_web_screenshots",
+      "list_browser_targets",
+      "get_navigation_context",
+      "inspect_electron_page",
+      "inspect_electron_fuses",
+      "capture_electron_scenario",
+      "list_electron_targets"
+    ],
+    "go_rust": [
+      "inspect_go_binary",
+      "inspect_rust_binary"
+    ],
+    "firmware_signal": [
+      "inspect_firmware_regions",
+      "inspect_signal_decoders",
+      "decode_signal_recording"
+    ],
+    "network_pcap": [
+      "inspect_pcap_capture",
+      "inspect_pcap_client",
+      "inspect_packet_capture",
+      "inspect_packet_fields"
+    ],
+    "wasm_evm": [
+      "inspect_wasm_artifact",
+      "compare_wasm_interfaces",
+      "inspect_evm_interface"
+    ],
+    "process_dynamic": [
+      "list_frida_devices",
+      "list_frida_processes",
+      "capture_process_scenario",
+      "compare_process_captures"
+    ],
+    "forensics_data": [
+      "inspect_sqlite_database",
+      "inspect_recorded_crash"
+    ],
+    "compare": [
+      "compare_functions",
+      "compare_artifacts",
+      "compare_application_versions",
+      "compare_bundles"
+    ],
+    "evidence_meta": [
+      "inspect_artifact",
+      "inspect_analysis_view",
+      "get_evidence_bundle",
+      "list_unknowns",
+      "list_documents",
+      "run_fixture_verifier",
+      "run_reconstruction_readiness_fixture"
+    ]
+  }
+}
