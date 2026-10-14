@@ -42,6 +42,22 @@
 
 <br/>
 
+> [!NOTE]
+> **Unofficial fork — reverse-skill × REA.** This repository is a community fork of
+> [zhaoxuya520/reverse-skill](https://github.com/zhaoxuya520/reverse-skill) (MIT) that adds the
+> [REA / `rea-agents`](https://github.com/morluto/rea) (MIT) MCP server as an **optional execution
+> backend**. The router (brain) is unchanged — routing, the scope/authorization gate and the
+> Evidence→Finding→Path contract are preserved. When a step needs to analyze a shipped artifact
+> (binary, APK/iOS, .NET, JS/Electron, firmware, pcap…), it **prefers a REA MCP tool when the
+> session has one, and falls back to the original local CLI tools when it does not**. REA is
+> referenced by a pinned npm version, never vendored.
+> It is **not** the official reverse-skill or REA project and is not endorsed by either.
+> Install for Claude Code: `bash install-claude.sh` · Details: [integrations/rea/REA-INTEGRATION.md](integrations/rea/REA-INTEGRATION.md).
+>
+> **非官方 fork —— reverse-skill × REA。** 本仓是 [zhaoxuya520/reverse-skill](https://github.com/zhaoxuya520/reverse-skill)（MIT）的
+> 社区 fork，接入 [REA / `rea-agents`](https://github.com/morluto/rea)（MIT）MCP 作为**可选执行后端**：
+> 路由大脑不变（路由/授权门禁/证据链全保留），分析 shipped 制品时**会话有对应 REA 工具就优先、没有就退回本地 CLI**，
+> REA 以固定 npm 版本引用、不内嵌。非官方、未获两上游背书。Claude Code 安装：`bash install-claude.sh`。
 
 <a id="about"></a>
 
