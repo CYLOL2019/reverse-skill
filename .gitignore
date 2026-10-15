@@ -34,6 +34,7 @@ issues-index.txt
 # 测试案例（本地）
 测试案例/
 测试案例.zip
+Software/
 
 # 工具索引（每台机器不同）
 skills/tool-index.md
@@ -68,6 +69,8 @@ BOOTSTRAP.md
 
 # 报告（防未脱敏泄漏）
 reports/
+# 分析结果（按项目分目录：analysis-results/<project>/，本地保存，不入库）
+analysis-results/
 
 # 运行产物 / 实验垃圾
 master-route-*/
