@@ -30,9 +30,31 @@ provenance 的 Evidence。两者是上下层，不是二选一。
    - **有** → 调用该 REA 工具执行；把返回的 Evidence 并入 timeline 与 Evidence→Finding→Path。
    - **无 / 该工具缺失 / 被客户端拦截** → 按 `localFallback` 与该技能 SKILL.md 原流程，
      用 `tool-index.md` 解析本地工具执行（缺则 bootstrap，仅 manifest 能力）。
-3. **逐动作判断**：某个工具缺失只让"那一个动作"退回本地，不影响其余 REA 工具继续使用。
+3. **该工具要不要 deep provider？**（`rea-tool-map.json` 的 `requiresProvider`，或按下表判断）
+   - **不要**（元数据/原生 macOS 类：`inspect_signature` / `inspect_plist` / `inspect_macho` /
+     `demangle_swift` / `analyze_swift_types` / `get_objc_classes` / `decode_interface_builder` …）
+     → 直接调用。
+   - **要**（反编译/交叉引用/调用图类：`binary_overview` / `analyze_function` /
+     `procedure_pseudo_code` / `xrefs` / `batch_decompile` / `trace_feature` …）
+     → **先确认至少有一个 provider 就绪**（Ghidra / Hopper / IDA 任一即可，`provider:auto` 会挑）。
+     一个都没有就不要发起调用，直接按 `localFallback` 走本地工具链。
+4. **逐动作判断**：某个工具缺失只让"那一个动作"退回本地，不影响其余 REA 工具继续使用。
 
-> 快速自检：`bash integrations/rea/probe-rea.sh`（只读，不改配置）。
+> **ACTION REQUIRED（进入第 3 步"要 provider"分支前跑一次，每个 case 一次就够）**：
+> `bash integrations/rea/probe-rea.sh`（只读，不改配置）。看它的「深度 provider 就绪状态」一段。
+> 不跑这一步的后果是真实发生过的：provider 缺失只会在**第一次深度调用**时以
+> `provider_unavailable` 暴露，那时已经做了十来步，分析计划要中途改道。
+
+### 要 provider 的动作，还有两个前置条件
+
+- **单架构 slice**：Ghidra v1 **不能**导入 universal/fat Mach-O，会返回
+  `architecture_unsupported`。先 `lipo -archs <bin>`；多架构就
+  `lipo -thin <arch> <bin> -output <slice>`，拿 slice 去分析。
+  注意地址从此是该 slice 的 VM 地址，证据链里要写明是哪个 arch。
+  元数据类工具不受此限，fat 二进制直接吃。
+- **provider 的环境变量必须在 MCP 注册项里**：MCP server 由客户端拉起，**不继承交互式
+  shell**，所以 `~/.zshrc` 里的 `GHIDRA_INSTALL_DIR` 到不了它。要写进注册项的 `env` 块
+  （见下节），或者放弃 MCP、改用本地 `rea` CLI 并在**同一条命令里** export。
 
 ## 硬约束（继承 RULES.md / scope-contract，不被 REA 放宽）
 
@@ -53,7 +75,18 @@ bash install-claude.sh
 
 # 或仅注册 REA MCP（版本取自 integrations/rea/rea.version）
 claude mcp add rea -- npx -y rea-agents@$(tr -d '[:space:]' < integrations/rea/rea.version) mcp
+
+# 要用 Ghidra/Hopper/IDA 这类 deep provider，注册时必须显式带上 env，
+# 否则 MCP server 看不到你 shell 里的变量（provider 会一直是 not_configured）：
+claude mcp add rea \
+  --env GHIDRA_INSTALL_DIR="$GHIDRA_INSTALL_DIR" \
+  -- npx -y rea-agents@$(tr -d '[:space:]' < integrations/rea/rea.version) mcp
 ```
+
+走插件路径（`plugins/reverse-skill/.claude-plugin/plugin.json` 的 `mcpServers.rea`）时，
+同一件事写在那里的 `env` 块：`"GHIDRA_INSTALL_DIR": "${GHIDRA_INSTALL_DIR}"`。
+改完要**重启/重连** MCP 才生效；生效与否用 `probe-rea.sh` 的 provider 段确认，
+不要靠"装了就该能用"的假设。
 
 注册/升级后需在 Claude Code 内重启或重连，`tools/list` 出现 `rea` 工具即生效。
 

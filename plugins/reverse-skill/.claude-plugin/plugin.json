@@ -29,7 +29,12 @@
         "-y",
         "rea-agents@6.4.0",
         "mcp"
-      ]
+      ],
+      "env": {
+        "GHIDRA_INSTALL_DIR": "${GHIDRA_INSTALL_DIR}",
+        "HOPPER_LAUNCHER_PATH": "${HOPPER_LAUNCHER_PATH}",
+        "REA_IDA_MCP_CONFIG": "${REA_IDA_MCP_CONFIG}"
+      }
     }
   }
 }
