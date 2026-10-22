@@ -67,6 +67,9 @@ burp-mcp-full/.gradle/
 # 已弃用
 BOOTSTRAP.md
 
+# 私人经验库（field-journal 为个人经验，本地私有，不入库）
+skills/field-journal/
+
 # 报告（防未脱敏泄漏）
 reports/
 # 分析结果（按项目分目录：analysis-results/<project>/，本地保存，不入库）

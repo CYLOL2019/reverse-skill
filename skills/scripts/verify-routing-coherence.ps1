@@ -118,8 +118,8 @@ $opsFiles = @(
     'case-review/SKILL.md',
     'case-review/scripts/review_case.py',
     'docs-generator/references\security-report-templates.md',
-    'docs-generator/references\vendor-report-rules.md',
-    'field-journal/_template.md'
+    'docs-generator/references\vendor-report-rules.md'
+    # 注: field-journal 为本地私有(整目录 .gitignore)，clean clone 可不存在，故不列为必需工件
 )
 $indexLines = New-Object System.Collections.Generic.List[string]
 foreach ($rel in $opsFiles) {
@@ -202,7 +202,9 @@ Assert-Fields (Join-Path $skillsRoot 'references/community-security-skills.md') 
 Assert-Fields (Join-Path $skillsRoot 'reverse-engineering/references/re-agent-workflow.md') @('Triage', 'Static', 'Dynamic', 'Synthesis', 'IAT 修复铁律', 'E-iat-repair-fail', 'E-exports', 'dnSpy', '可行性门闩', 'E-self-check-crash', 'ExitProcess', '时间盒', 'E-api-hash', 'E-anti-debug-peb', 'E-wide-strings', 'A–T', 'U–AV', 'nonpe-format-cookbook')
 Assert-Fields (Join-Path $skillsRoot 'pentest-tools/references/recon-pipeline.md') @('auth.status', 'network_profile', 'Evidence', 'nuclei')
 Assert-Fields (Join-Path $skillsRoot 'docs-generator/references/security-report-templates.md') @('Evidence Chain', 'Findings', 'Path')
-Assert-Fields (Join-Path $skillsRoot 'field-journal/_template.md') @('Scope', 'Evidence', 'Finding')
+# field-journal 为本地私有(整目录 .gitignore)，clean clone 可不存在；存在则校验模板契约。
+$fjTemplate = Join-Path $skillsRoot 'field-journal/_template.md'
+if (Test-Path -LiteralPath $fjTemplate) { Assert-Fields $fjTemplate @('Scope', 'Evidence', 'Finding') }
 Assert-Fields (Join-Path $skillsRoot 'case-review/SKILL.md') @('ACTION REQUIRED', 'review_case.py', 'Evidence Graph Review')
 $vendorRulesPath = Join-Path $skillsRoot 'docs-generator/references/vendor-report-rules.md'
 $vendorRulesText = Get-Content $vendorRulesPath -Raw -Encoding UTF8
